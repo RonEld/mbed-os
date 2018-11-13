@@ -42,21 +42,46 @@ void mbedtls_sha256_clone( mbedtls_sha256_context *dst,
     memcpy( dst, src, sizeof( mbedtls_sha256_context ) );
 }
 
+static int init_cc( mbedtls_sha256_context *ctx, int is224 )
+{
+    int ret = 0;
+    if( CRYS_HASH_Init( &ctx->crys_hash_ctx, is224 ?
+                       CRYS_HASH_SHA224_mode : CRYS_HASH_SHA256_mode ) != CRYS_OK )
+    {
+        ret = MBEDTLS_ERR_SHA256_HW_ACCEL_FAILED ;
+        goto exit;
+    }
+
+    ctx->is_cc_initiated = 1;
+exit:
+    return ( ret );
+
+}
 
 int mbedtls_sha256_starts_ret( mbedtls_sha256_context *ctx, int is224 )
 {
-    if(CRYS_HASH_Init( &ctx->crys_hash_ctx, is224 ?
-                    CRYS_HASH_SHA224_mode : CRYS_HASH_SHA256_mode ) != CRYS_OK )
-        return ( MBEDTLS_ERR_SHA256_HW_ACCEL_FAILED );
-    return ( 0 );
+    return ( init_cc( ctx, is224 ) );
 }
 
 int mbedtls_internal_sha256_process( mbedtls_sha256_context *ctx,
                                      const unsigned char data[64] )
 {
+    int ret = 0;
+    if( ctx->is_cc_initiated == 0 )
+    {
+        ret = init_cc( ctx, 0 );
+        if( ret != 0 )
+            goto exit;
+    }
+
     if( CRYS_HASH_Update( &ctx->crys_hash_ctx, (uint8_t*)data, 64 ) != CRYS_OK )
-        return ( MBEDTLS_ERR_SHA256_HW_ACCEL_FAILED );
-    return ( 0 );
+    {
+        ret = MBEDTLS_ERR_SHA256_HW_ACCEL_FAILED;
+        goto exit;
+    }
+
+exit:
+    return ( ret );
 }
 
 int mbedtls_sha256_update_ret( mbedtls_sha256_context *ctx,

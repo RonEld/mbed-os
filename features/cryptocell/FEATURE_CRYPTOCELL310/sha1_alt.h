@@ -33,6 +33,7 @@ extern "C" {
 typedef struct
 {
     CRYS_HASHUserContext_t crys_hash_ctx;
+    int                    is_cc_initiated;
 } mbedtls_sha1_context;
 
 /**

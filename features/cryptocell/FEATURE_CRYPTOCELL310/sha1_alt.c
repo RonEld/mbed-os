@@ -44,11 +44,23 @@ void mbedtls_sha1_clone( mbedtls_sha1_context *dst,
     memcpy( dst, src, sizeof( mbedtls_sha1_context ) );
 }
 
+static int init_cc( mbedtls_sha1_context *ctx )
+{
+    int ret = 0;
+    if( CRYS_HASH_Init( &ctx->crys_hash_ctx, CRYS_HASH_SHA1_mode ) != CRYS_OK )
+    {
+        ret = MBEDTLS_ERR_SHA1_HW_ACCEL_FAILED ;
+        goto exit;
+    }
+
+    ctx->is_cc_initiated = 1;
+exit:
+    return ( ret );
+}
+
 int mbedtls_sha1_starts_ret( mbedtls_sha1_context *ctx )
 {
-    if( CRYS_HASH_Init( &ctx->crys_hash_ctx, CRYS_HASH_SHA1_mode ) != CRYS_OK )
-            return ( MBEDTLS_ERR_SHA1_HW_ACCEL_FAILED );
-    return ( 0 );
+    return ( init_cc( ctx ) );
 }
 
 
@@ -79,8 +91,21 @@ int mbedtls_sha1_finish_ret( mbedtls_sha1_context *ctx,
 int mbedtls_internal_sha1_process( mbedtls_sha1_context *ctx,
                                    const unsigned char data[64] )
 {
+    int ret = 0;
+    if( ctx->is_cc_initiated == 0 )
+    {
+        ret = init_cc( ctx );
+        if( ret != 0 )
+            goto exit;
+    }
+
     if( CRYS_HASH_Update( &ctx->crys_hash_ctx, (uint8_t*)data, 64 ) != CRYS_OK )
-        return ( MBEDTLS_ERR_SHA1_HW_ACCEL_FAILED );
-    return ( 0 );
+    {
+        ret = MBEDTLS_ERR_SHA1_HW_ACCEL_FAILED;
+        goto exit;
+    }
+
+exit:
+        return ( ret );
 }
 #endif //MBEDTLS_SHA1_ALT
