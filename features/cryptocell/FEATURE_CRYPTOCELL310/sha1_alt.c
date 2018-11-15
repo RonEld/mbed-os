@@ -76,10 +76,10 @@ int mbedtls_sha1_update_ret( mbedtls_sha1_context *ctx,
 int mbedtls_sha1_finish_ret( mbedtls_sha1_context *ctx,
                              unsigned char output[20] )
 {
-    CRYSError_t CrysErr = CRYS_OK;
+    CRYSError_t crys_err = CRYS_OK;
     CRYS_HASH_Result_t crys_result = {0};
-    CrysErr = CRYS_HASH_Finish( &ctx->crys_hash_ctx, crys_result );
-    if( CrysErr == CRYS_OK )
+    crys_err = CRYS_HASH_Finish( &ctx->crys_hash_ctx, crys_result );
+    if( crys_err == CRYS_OK )
     {
         memcpy( output, crys_result, 20 );
         return ( 0 );
