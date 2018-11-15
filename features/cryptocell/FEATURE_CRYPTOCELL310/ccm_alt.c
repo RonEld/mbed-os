@@ -42,18 +42,18 @@ int mbedtls_ccm_setkey( mbedtls_ccm_context *ctx,
                         unsigned int keybits )
 {
     if( ctx == NULL )
-        return ( MBEDTLS_ERR_CCM_BAD_INPUT );
+        return( MBEDTLS_ERR_CCM_BAD_INPUT );
 
     if( cipher != MBEDTLS_CIPHER_ID_AES ||
          keybits != 128 )
     {
-        return ( MBEDTLS_ERR_PLATFORM_FEATURE_UNSUPPORTED );
+        return( MBEDTLS_ERR_PLATFORM_FEATURE_UNSUPPORTED );
     }
 
     memcpy( ctx->cipher_key , key, keybits / 8 );
-    ctx->keySize_ID = CRYS_AES_Key128BitSize;
+    ctx->key_size = CRYS_AES_Key128BitSize;
 
-    return ( 0 );
+    return( 0 );
 
 }
 
@@ -68,8 +68,8 @@ int mbedtls_ccm_encrypt_and_tag( mbedtls_ccm_context *ctx, size_t length,
                          unsigned char *tag, size_t tag_len )
 
 {
-    CRYSError_t CrysRet = CRYS_OK;
-    CRYS_AESCCM_Mac_Res_t CC_Mac_Res = { 0 };
+    CRYSError_t crys_ret = CRYS_OK;
+    CRYS_AESCCM_Mac_Res_t cc_mac_res = { 0 };
     int ret = 0;
     /*
      * Check length requirements: SP800-38C A.1
@@ -77,37 +77,37 @@ int mbedtls_ccm_encrypt_and_tag( mbedtls_ccm_context *ctx, size_t length,
      * 'length' checked later (when writing it to the first block)
      */
     if( tag_len < 4 || tag_len > 16 || tag_len % 2 != 0 )
-        return ( MBEDTLS_ERR_CCM_BAD_INPUT );
+        return( MBEDTLS_ERR_CCM_BAD_INPUT );
 
-    if( tag_len > sizeof( CC_Mac_Res ) )
-        return ( MBEDTLS_ERR_CCM_BAD_INPUT );
+    if( tag_len > sizeof( cc_mac_res ) )
+        return( MBEDTLS_ERR_CCM_BAD_INPUT );
 
     /* Also implies q is within bounds */
     if( iv_len < 7 || iv_len > 13 )
-        return ( MBEDTLS_ERR_CCM_BAD_INPUT );
+        return( MBEDTLS_ERR_CCM_BAD_INPUT );
 
 #if SIZE_MAX > UINT_MAX
     if( length > 0xFFFFFFFF || add_len > 0xFFFFFFFF )
-        return ( MBEDTLS_ERR_CCM_BAD_INPUT );
+        return( MBEDTLS_ERR_CCM_BAD_INPUT );
 #endif
 
-    CrysRet =  CRYS_AESCCM( SASI_AES_ENCRYPT, ctx->cipher_key, ctx->keySize_ID, (uint8_t*)iv, iv_len,
-                           (uint8_t*)add, add_len,  (uint8_t*)input, length, output, tag_len, CC_Mac_Res );
-    if( CrysRet == CRYS_AESCCM_ILLEGAL_PARAMETER_SIZE_ERROR )
+    crys_ret =  CRYS_AESCCM( SASI_AES_ENCRYPT, ctx->cipher_key, ctx->key_size, (uint8_t*)iv, iv_len,
+                            (uint8_t*)add, add_len,  (uint8_t*)input, length, output, tag_len, cc_mac_res );
+    if( crys_ret == CRYS_AESCCM_ILLEGAL_PARAMETER_SIZE_ERROR )
     {
        ret = MBEDTLS_ERR_CCM_BAD_INPUT;
        goto exit;
     }
-    else if ( CrysRet != CRYS_OK )
+    else if( crys_ret != CRYS_OK )
     {
         ret = MBEDTLS_ERR_PLATFORM_HW_ACCEL_FAILED;
         goto exit;
     }
 
-    memcpy( tag, CC_Mac_Res, tag_len );
+    memcpy( tag, cc_mac_res, tag_len );
 
 exit:
-    return ( ret );
+    return( ret );
 
 }
 
@@ -121,7 +121,7 @@ int mbedtls_ccm_auth_decrypt( mbedtls_ccm_context *ctx, size_t length,
                       const unsigned char *tag, size_t tag_len )
 
 {
-    CRYSError_t CrysRet = CRYS_OK;
+    CRYSError_t crys_ret = CRYS_OK;
     int ret = 0;
     /*
      * Check length requirements: SP800-38C A.1
@@ -129,20 +129,20 @@ int mbedtls_ccm_auth_decrypt( mbedtls_ccm_context *ctx, size_t length,
      * 'length' checked later (when writing it to the first block)
      */
     if( tag_len < 4 || tag_len > 16 || tag_len % 2 != 0 )
-        return ( MBEDTLS_ERR_CCM_BAD_INPUT );
+        return( MBEDTLS_ERR_CCM_BAD_INPUT );
 
     /* Also implies q is within bounds */
     if( iv_len < 7 || iv_len > 13 )
-        return ( MBEDTLS_ERR_CCM_BAD_INPUT );
+        return( MBEDTLS_ERR_CCM_BAD_INPUT );
 
 #if SIZE_MAX > UINT_MAX
     if( length > 0xFFFFFFFF || add_len > 0xFFFFFFFF )
-        return ( MBEDTLS_ERR_CCM_BAD_INPUT );
+        return( MBEDTLS_ERR_CCM_BAD_INPUT );
 #endif
 
-    CrysRet =  CRYS_AESCCM( SASI_AES_DECRYPT, ctx->cipher_key, ctx->keySize_ID,(uint8_t*)iv, iv_len,
+    crys_ret =  CRYS_AESCCM( SASI_AES_DECRYPT, ctx->cipher_key, ctx->key_size,(uint8_t*)iv, iv_len,
                             (uint8_t*)add, add_len,  (uint8_t*)input, length, output, tag_len, (uint8_t*)tag );
-    if( CrysRet == CRYS_AESCCM_ILLEGAL_PARAMETER_SIZE_ERROR )
+    if( crys_ret == CRYS_AESCCM_ILLEGAL_PARAMETER_SIZE_ERROR )
     {
        /*
         * When CRYS_AESCCM_ILLEGAL_PARAMETER_SIZE_ERROR is returned,
@@ -153,7 +153,7 @@ int mbedtls_ccm_auth_decrypt( mbedtls_ccm_context *ctx, size_t length,
         */
        return( MBEDTLS_ERR_CCM_BAD_INPUT );
     }
-    else if( CrysRet == CRYS_FATAL_ERROR )
+    else if( crys_ret == CRYS_FATAL_ERROR )
     {
         /*
          * Unfortunately, Crys AESCCM returns CRYS_FATAL_ERROR when
@@ -162,7 +162,7 @@ int mbedtls_ccm_auth_decrypt( mbedtls_ccm_context *ctx, size_t length,
         ret = MBEDTLS_ERR_CCM_AUTH_FAILED;
         goto exit;
     }
-    else if ( CrysRet != CRYS_OK )
+    else if( crys_ret != CRYS_OK )
     {
         ret = MBEDTLS_ERR_PLATFORM_HW_ACCEL_FAILED;
         goto exit;
@@ -181,9 +181,7 @@ int mbedtls_ccm_star_encrypt_and_tag( mbedtls_ccm_context *ctx, size_t length,
                          const unsigned char *input, unsigned char *output,
                          unsigned char *tag, size_t tag_len )
 {
-
     return( MBEDTLS_ERR_AES_FEATURE_UNAVAILABLE );
-
 }
 
 int mbedtls_ccm_star_auth_decrypt( mbedtls_ccm_context *ctx, size_t length,
@@ -193,7 +191,6 @@ int mbedtls_ccm_star_auth_decrypt( mbedtls_ccm_context *ctx, size_t length,
                       const unsigned char *tag, size_t tag_len )
 {
     return( MBEDTLS_ERR_AES_FEATURE_UNAVAILABLE );
-
 }
 
 #endif
