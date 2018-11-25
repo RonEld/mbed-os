@@ -59,7 +59,7 @@ int mbedtls_ccm_setkey( mbedtls_ccm_context *ctx,
         break;
         case 192:
         case 256:
-            return( MBEDTLS_ERR_AES_FEATURE_UNAVAILABLE );
+            return( MBEDTLS_ERR_PLATFORM_FEATURE_UNSUPPORTED );
         default:
             return( MBEDTLS_ERR_CCM_BAD_INPUT );
     }
@@ -193,7 +193,7 @@ int mbedtls_ccm_star_encrypt_and_tag( mbedtls_ccm_context *ctx, size_t length,
                          const unsigned char *input, unsigned char *output,
                          unsigned char *tag, size_t tag_len )
 {
-    return( MBEDTLS_ERR_AES_FEATURE_UNAVAILABLE );
+    return( MBEDTLS_ERR_PLATFORM_FEATURE_UNSUPPORTED );
 }
 
 int mbedtls_ccm_star_auth_decrypt( mbedtls_ccm_context *ctx, size_t length,
@@ -202,7 +202,7 @@ int mbedtls_ccm_star_auth_decrypt( mbedtls_ccm_context *ctx, size_t length,
                       const unsigned char *input, unsigned char *output,
                       const unsigned char *tag, size_t tag_len )
 {
-    return( MBEDTLS_ERR_AES_FEATURE_UNAVAILABLE );
+    return( MBEDTLS_ERR_PLATFORM_FEATURE_UNSUPPORTED );
 }
 
 #endif
